@@ -1,0 +1,8 @@
+.vscode/
+.idea/
+
+# clion
+cmake-build-debug/
+
+build-*/
+build/
