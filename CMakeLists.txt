@@ -20,7 +20,7 @@ include_directories(.
         ./loam_velodyne)
 
 AUX_SOURCE_DIRECTORY(. DIR_ROOT)
-AUX_SOURCE_DIRECTORY(./DsvLoading DIR_LOAM)
+AUX_SOURCE_DIRECTORY(./loam_velodyne DIR_LOAM)
 
 
 add_executable(${PROJECT_NAME}
