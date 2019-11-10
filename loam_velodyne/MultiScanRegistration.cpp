@@ -163,10 +163,11 @@ void MultiScanRegistration::process(const pcl::PointCloud<pcl::PointXYZ>& laserC
     point.intensity = scanID + relTime;
 
     // project point to the start of the sweep using corresponding IMU data
-    if (hasIMUData()) {
-      setIMUTransformFor(relTime);
-      transformToStartIMU(point);
-    }
+    // TODO: recover following
+//    if (hasIMUData()) {
+//      setIMUTransformFor(relTime);
+//      transformToStartIMU(point);
+//    }
 
     laserCloudScans[scanID].push_back(point);
   }
