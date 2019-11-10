@@ -63,7 +63,15 @@ void MultiScanMapper::set(const float &lowerBound,
 
 
 int MultiScanMapper::getRingForAngle(const float& angle) {
-  return int(((angle * 180 / M_PI) - _lowerBound) * _factor + 0.5);
+  float angle_ = angle * 180 / M_PI;
+  if (angle_ < 7.5 && angle_ > 1.8)
+    return round(8 - angle_) - 1;
+  if (angle_ <= 1.8 && angle_ > -5.8)
+    return round(30 - (angle_ + 6) * 3) - 1;
+  if (angle_ <= -5.8 && angle_ >= -16.5)
+    return round((-6 - angle_) + 30) - 1;
+  return -1;
+//  return int(((angle * 180 / M_PI) - _lowerBound) * _factor + 0.5);
 }
 
 
