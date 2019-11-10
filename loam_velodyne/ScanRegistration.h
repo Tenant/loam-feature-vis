@@ -181,7 +181,7 @@ private:
    * @param relTime the time relative to the scan time
    * @param outputState the output state instance
    */
-  void interpolateIMUStateFor(const float& relTime,
+  void interpolateIMUStateFor(const Time& relTime,
                               IMUState& outputState);
 
 

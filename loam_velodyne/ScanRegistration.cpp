@@ -135,7 +135,7 @@ void ScanRegistration::transformToStartIMU(pcl::PointXYZI& point)
 
 
 
-void ScanRegistration::interpolateIMUStateFor(const float &relTime,
+void ScanRegistration::interpolateIMUStateFor(const Time &relTime,
                                               IMUState &outputState)
 {
   double timeDiff = (_scanTime - _imuHistory[_imuIdx].stamp) + relTime;
