@@ -14,12 +14,13 @@
 
 #include <pcl/point_types.h>
 #include <pcl/visualization/pcl_visualizer.h>
-//
+
 #include "types.h"
+#include "loam_velodyne/MultiScanRegistration.h"
 
 using namespace std;
-using namespace cv;
 
+typedef pcl::PointXYZ pointT;
 
 class DsvlProcessor
 {
@@ -28,11 +29,18 @@ public:
     bool ReadOneDsvlFrame ();
     void Processing();
     void ProcessOneFrame ();
+    void printLog();
 
 private:
     pcl::visualization::PCLVisualizer::Ptr viewer;
-    pcl::PointCloud<pcl::PointXYZI>::Ptr pts;
-    pcl::visualization::PointCloudColorHandlerGenericField<pcl::PointXYZI>::Ptr handler;
+    pcl::PointCloud<pointT>::Ptr pts;
+    pcl::visualization::PointCloudColorHandlerGenericField<pointT>::Ptr handler;
+
+    pcl::PointCloud<pcl::PointXYZI> laserCloud;
+    pcl::PointCloud<pcl::PointXYZI> cornerPointsSharp;
+    pcl::PointCloud<pcl::PointXYZI> cornerPointsLessSharp;
+    pcl::PointCloud<pcl::PointXYZI> surfacePointsFlat;
+    pcl::PointCloud<pcl::PointXYZI> surfacePointsLessFlat;
 
     int dsvlbytesiz;
     int dsvbytesiz;
@@ -41,6 +49,8 @@ private:
     ONEDSVFRAME	*onefrm;
     std::ifstream dfp;
     bool isRunning;
+
+    loam::MultiScanRegistration featureExtractor;
 };
 
 #endif // DSVLPROCESSOR_H
