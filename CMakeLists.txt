@@ -4,6 +4,9 @@ set(CMAKE_CXX_STANDARD 11)
 
 set(CMAKE_BUILD_TYPE Debug)
 
+find_package(Boost 1.6 REQUIRED)
+include_directories(${Boost_INCLUDE_DIRS})
+
 find_package(PCL REQUIRED)
 include_directories(${PCL_INCLUDE_DIRS})
 link_directories(${PCL_LIBRARY_DIRS})
@@ -11,12 +14,19 @@ link_directories(${PCL_LIBRARY_DIRS})
 find_package(OpenCV REQUIRED)
 include_directories(${OpenCV_INCLUDE_DIRS})
 
-include_directories(.)
+include_directories( "/usr/include/eigen3" )
 
-AUX_SOURCE_DIRECTORY(. DIR_SRCS)
+include_directories(.
+        ./loam_velodyne)
+
+AUX_SOURCE_DIRECTORY(. DIR_ROOT)
+AUX_SOURCE_DIRECTORY(./DsvLoading DIR_LOAM)
+
 
 add_executable(${PROJECT_NAME}
-        ${DIR_SRCS})
+        ${DIR_ROOT}
+        ${DIR_LOAM})
 target_link_libraries(${PROJECT_NAME}
         ${PCL_LIBRARIES}
-        ${OpenCV_LIBS})
+        ${OpenCV_LIBS}
+        ${Boost_LIBRARIES})
