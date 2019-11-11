@@ -11,7 +11,9 @@ const int maxn = 2000000000;
 const double topi = acos(-1.0)/180.0;	// pi/180
 #define BOUND(x,min,max) ((x) < (min) ? (min) : ((x) > (max) ? (max) : (x)))
 #define	nint(x)			(int)((x>0)?(x+0.5):(x-0.5))
-#define	sqr(x)			((x)*(x))
+//#ifndef sqr(x)
+//    #define	sqr(x)			((x)*(x))
+//#endif
 
 struct point2d
 {
@@ -34,7 +36,9 @@ typedef double  MATRIX[3][3] ;
 #define	BKNUM_PER_FRM		180
 #define	SCANDATASIZE		(180*10)
 
+#ifndef M_PI
 #define	M_PI		3.1415926536
+#endif
 
 #define	INVALIDDOUBLE		99999999.9
 
