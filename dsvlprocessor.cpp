@@ -19,6 +19,9 @@ handler(new pcl::visualization::PointCloudColorHandlerGenericField<pointT>(pts, 
     loam::LaserOdometryParams laserOdometryParams = loam::LaserOdometryParams();
     laserOdometry = loam::LaserOdometry(laserOdometryParams);
 
+    loam::LaserMappingParams laserMappingParams= loam::LaserMappingParams();
+    laserMapping= loam::LaserMapping(laserMappingParams);
+
     viewer->setBackgroundColor(0,0,0);
     viewer->addCoordinateSystem(1.0);
 
@@ -137,6 +140,8 @@ void DsvlProcessor::ProcessOneFrame() {
                        laserCloud.makeShared(),
                        transform, millsec);
     transformSum = laserOdometry.transformSum();
+
+    laserMapping.spin();
 }
 
 void DsvlProcessor::printLog() {
@@ -144,5 +149,12 @@ void DsvlProcessor::printLog() {
     std::printf("[laserCloud, %d], [cornerPointsSharp, %d], [cornerPointsLessSharp, %d], [surfacePointsFlat, %d], [surfacePointsLessFlat, %d]\n",\
     laserCloud.size(), cornerPointsSharp.size(), cornerPointsLessSharp.size(),\
     surfacePointsFlat.size(), surfacePointsLessFlat.size());
+    std::printf("[x, %f], [y, %f], [z, %f], [pitch, %f], [yaw, %f], [roll, %f]\n",
+            transformSum.pos.x(),
+            transformSum.pos.y(),
+            transformSum.pos.z(),
+            transformSum.rot_x.deg(),
+            transformSum.rot_y.deg(),
+            transformSum.rot_z.deg());
 }
 
