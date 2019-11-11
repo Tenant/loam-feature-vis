@@ -43,6 +43,8 @@ private:
     pcl::PointCloud<pcl::PointXYZI> surfacePointsFlat;
     pcl::PointCloud<pcl::PointXYZI> surfacePointsLessFlat;
 
+    loam::Twist transformSum;
+
     int dsvlbytesiz;
     int dsvbytesiz;
     int labbytesiz;

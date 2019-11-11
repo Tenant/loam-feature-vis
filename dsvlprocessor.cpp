@@ -127,7 +127,16 @@ void DsvlProcessor::ProcessOneFrame() {
     surfacePointsFlat = featureExtractor.surfacePointsFlat();
     surfacePointsLessFlat = featureExtractor.surfacePointsLessFlat();
 
-    laserOdometry.process();
+    loam::Twist transform;
+    transform.setZero();
+
+    laserOdometry.spin(cornerPointsSharp.makeShared(),
+                       cornerPointsLessSharp.makeShared(),
+                       surfacePointsFlat.makeShared(),
+                       surfacePointsLessFlat.makeShared(),
+                       laserCloud.makeShared(),
+                       transform, millsec);
+    transformSum = laserOdometry.transformSum();
 }
 
 void DsvlProcessor::printLog() {

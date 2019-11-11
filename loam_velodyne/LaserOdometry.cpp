@@ -240,21 +240,36 @@ void LaserOdometry::accumulateRotation(Angle cx, Angle cy, Angle cz,
 }
 
 
-void LaserOdometry::spin()
+void LaserOdometry::spin(const pcl::PointCloud<pcl::PointXYZI>::Ptr& cornerPointsSharp,
+        const pcl::PointCloud<pcl::PointXYZI>::Ptr& cornerPointsLessSharp,
+        const pcl::PointCloud<pcl::PointXYZI>::Ptr& surfPointsFlat,
+        const pcl::PointCloud<pcl::PointXYZI>::Ptr& surfPointsLessFlat,
+        const pcl::PointCloud<pcl::PointXYZI>::Ptr& laserCloudFullRes,
+        Twist transform,
+        Time timestamp)
 {
-  // ros::Rate rate(100);
-  // bool status = ros::ok();
+  pcl::copyPointCloud(*cornerPointsSharp, *_cornerPointsSharp);
+  pcl::copyPointCloud(*cornerPointsLessSharp, *_cornerPointsLessSharp);
+  pcl::copyPointCloud(*surfPointsFlat, *_surfPointsFlat);
+  pcl::copyPointCloud(*surfPointsLessFlat, *_surfPointsLessFlat);
+  pcl::copyPointCloud(*laserCloudFullRes, *_laserCloudFullRes);
+  _transform = transform;
 
-  // // loop until shutdown
-  // while (status) {
-  //   ros::spinOnce();
+  _timeCornerPointsSharp = timestamp;
+  _timeCornerPointsLessSharp = timestamp;
+  _timeSurfPointsFlat = timestamp;
+  _timeSurfPointsLessFlat = timestamp;
+  _timeLaserCloudFullRes = timestamp;
+  _timeImuTrans = timestamp;
 
-  //   // try processing new data
-  //   process();
+  _newCornerPointsSharp = true;
+  _newCornerPointsLessSharp = true;
+  _newSurfPointsFlat = true;
+  _newSurfPointsLessFlat = true;
+  _newLaserCloudFullRes = true;
+  _newImuTrans = true;
 
-  //   status = ros::ok();
-  //   rate.sleep();
-  // }
+  process();
 }
 
 

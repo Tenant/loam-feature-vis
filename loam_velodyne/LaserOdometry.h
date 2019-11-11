@@ -40,6 +40,7 @@
 
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
+#include <pcl/common/io.h>
 //#include <tf/transform_datatypes.h>
 //#include <tf/transform_broadcaster.h>
 
@@ -54,7 +55,13 @@ public:
   explicit LaserOdometry(const LaserOdometryParams& params = LaserOdometryParams());
 
   /** \brief Process incoming messages in a loop until shutdown (used in active mode). */
-  void spin();
+  void spin(const pcl::PointCloud<pcl::PointXYZI>::Ptr&,
+            const pcl::PointCloud<pcl::PointXYZI>::Ptr&,
+            const pcl::PointCloud<pcl::PointXYZI>::Ptr&,
+            const pcl::PointCloud<pcl::PointXYZI>::Ptr&,
+            const pcl::PointCloud<pcl::PointXYZI>::Ptr&,
+            Twist _transform,
+            Time timestamp);
 
   /** \brief Try to process buffered data. */
   bool process();
