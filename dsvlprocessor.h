@@ -17,6 +17,7 @@
 
 #include "types.h"
 #include "loam_velodyne/MultiScanRegistration.h"
+#include "loam_velodyne/LaserOdometry.h"
 
 using namespace std;
 
@@ -51,6 +52,7 @@ private:
     bool isRunning;
 
     loam::MultiScanRegistration featureExtractor;
+    loam::LaserOdometry laserOdometry;
 };
 
 #endif // DSVLPROCESSOR_H

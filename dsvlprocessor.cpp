@@ -16,6 +16,9 @@ handler(new pcl::visualization::PointCloudColorHandlerGenericField<pointT>(pts, 
     loam::ScanRegistrationParams params = loam::ScanRegistrationParams(0.1,200,6,5,2,4,0.2,0.1,200,"none");
     featureExtractor = loam::MultiScanRegistration(scanMapper, params);
 
+    loam::LaserOdometryParams laserOdometryParams = loam::LaserOdometryParams();
+    laserOdometry = loam::LaserOdometry(laserOdometryParams);
+
     viewer->setBackgroundColor(0,0,0);
     viewer->addCoordinateSystem(1.0);
 
@@ -123,6 +126,8 @@ void DsvlProcessor::ProcessOneFrame() {
     cornerPointsLessSharp = featureExtractor.cornerPointsLessSharp();
     surfacePointsFlat = featureExtractor.surfacePointsFlat();
     surfacePointsLessFlat = featureExtractor.surfacePointsLessFlat();
+
+    laserOdometry.process();
 }
 
 void DsvlProcessor::printLog() {
