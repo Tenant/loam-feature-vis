@@ -55,7 +55,11 @@ public:
   explicit LaserMapping(const LaserMappingParams& params = LaserMappingParams());
 
   /** \brief Process incoming messages in a loop until shutdown (used in active mode). */
-  void spin();
+  void spin(const pcl::PointCloud<pcl::PointXYZI>::Ptr& laserCloudCornerLast_,
+       const pcl::PointCloud<pcl::PointXYZI>::Ptr& laserCloudSurfLast_,
+       const pcl::PointCloud<pcl::PointXYZI>::Ptr& laserCloudFullRes_,
+       Twist transformSum_,
+       Time timestamp);
 
   /** \brief Try to process buffered data. */
   bool process();

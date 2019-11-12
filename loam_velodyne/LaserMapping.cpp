@@ -224,7 +224,11 @@ void LaserMapping::pointAssociateTobeMapped(const pcl::PointXYZI& pi, pcl::Point
 }
 
 
-void LaserMapping::spin()
+void LaserMapping::spin(const pcl::PointCloud<pcl::PointXYZI>::Ptr& laserCloudCornerLast_,
+                        const pcl::PointCloud<pcl::PointXYZI>::Ptr& laserCloudSurfLast_,
+                        const pcl::PointCloud<pcl::PointXYZI>::Ptr& laserCloudFullRes_,
+                        Twist transformSum_,
+                        Time timestamp)
 {
   // ros::Rate rate(100);
   // bool status = ros::ok();
@@ -238,6 +242,23 @@ void LaserMapping::spin()
   //   status = ros::ok();
   //   rate.sleep();
   // }
+
+  _laserCloudCornerLast = laserCloudCornerLast_;   ///< last corner points cloud
+  _laserCloudSurfLast = laserCloudSurfLast_;     ///< last surface points cloud
+  _laserCloudFullRes = laserCloudFullRes_;
+  _transformSum = transformSum_;
+
+  _timeLaserCloudCornerLast = timestamp;
+  _timeLaserCloudSurfLast = timestamp;
+  _timeLaserCloudFullRes = timestamp;
+  _timeLaserOdometry = timestamp;
+
+  _newLaserCloudCornerLast = true;
+  _newLaserCloudSurfLast = true;
+  _newLaserCloudFullRes = true;
+  _newLaserOdometry = true;
+
+  process();
 }
 
 
@@ -284,7 +305,7 @@ bool LaserMapping::process()
   pcl::PointXYZI pointSel;
 
   // relate incoming data to map
-  transformAssociateToMap();
+  transformAssociateToMap(); // TODO: figure out
 
   size_t laserCloudCornerLastNum = _laserCloudCornerLast->points.size();
   for (size_t i = 0; i < laserCloudCornerLastNum; i++) {
@@ -418,30 +439,31 @@ bool LaserMapping::process()
 
           pcl::PointXYZI transform_pos = (pcl::PointXYZI) _transformTobeMapped.pos;
 
-          bool isInLaserFOV = false;
-          for (int ii = -1; ii <= 1; ii += 2) {
-            for (int jj = -1; jj <= 1; jj += 2) {
-              for (int kk = -1; kk <= 1; kk += 2) {
-                pcl::PointXYZI corner;
-                corner.x = centerX + 25.0f * ii;
-                corner.y = centerY + 25.0f * jj;
-                corner.z = centerZ + 25.0f * kk;
-
-                float squaredSide1 = calcSquaredDiff(transform_pos, corner);
-                float squaredSide2 = calcSquaredDiff(pointOnYAxis, corner);
-
-                float check1 = 100.0f + squaredSide1 - squaredSide2
-                               - 10.0f * sqrt(3.0f) * sqrt(squaredSide1);
-
-                float check2 = 100.0f + squaredSide1 - squaredSide2
-                               + 10.0f * sqrt(3.0f) * sqrt(squaredSide1);
-
-                if (check1 < 0 && check2 > 0) {
-                  isInLaserFOV = true;
-                }
-              }
-            }
-          }
+          bool isInLaserFOV = true;
+//          bool isInLaserFOV = false;
+//          for (int ii = -1; ii <= 1; ii += 2) {
+//            for (int jj = -1; jj <= 1; jj += 2) {
+//              for (int kk = -1; kk <= 1; kk += 2) {
+//                pcl::PointXYZI corner;
+//                corner.x = centerX + 25.0f * ii;
+//                corner.y = centerY + 25.0f * jj;
+//                corner.z = centerZ + 25.0f * kk;
+//
+//                float squaredSide1 = calcSquaredDiff(transform_pos, corner);
+//                float squaredSide2 = calcSquaredDiff(pointOnYAxis, corner);
+//
+//                float check1 = 100.0f + squaredSide1 - squaredSide2
+//                               - 10.0f * sqrt(3.0f) * sqrt(squaredSide1);
+//
+//                float check2 = 100.0f + squaredSide1 - squaredSide2
+//                               + 10.0f * sqrt(3.0f) * sqrt(squaredSide1);
+//
+//                if (check1 < 0 && check2 > 0) {
+//                  isInLaserFOV = true;
+//                }
+//              }
+//            }
+//          }
 
           size_t cubeIdx = i + _params.laserCloudWidth*j + _params.laserCloudWidth * _params.laserCloudHeight * k;
           if (isInLaserFOV) {
@@ -847,13 +869,14 @@ void LaserMapping::optimizeTransformTobeMapped()
 
     if (deltaR < _params.deltaRAbort && deltaT < _params.deltaTAbort) {
       // ROS_DEBUG("[laserMapping] Optimization Done: %i, %f, %f", int(iterCount), deltaR, deltaT);
+      std::printf("[laserMapping] Optimization Done: %i, %f, %f\n", int(iterCount), deltaR, deltaT);
       isConverged = true;
       break;
     }
   }
 
   if (!isConverged) {
-    // std::cout << "[LaserMapping] Optimization Incomplete" << std::endl;
+    std::printf("[LaserMapping] Optimization Incomplete\n");
   }
 
   transformUpdate();

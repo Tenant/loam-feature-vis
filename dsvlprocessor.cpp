@@ -141,7 +141,11 @@ void DsvlProcessor::ProcessOneFrame() {
                        transform, millsec);
     transformSum = laserOdometry.transformSum();
 
-    laserMapping.spin();
+    laserMapping.spin(cornerPointsSharp.makeShared(),
+                      surfacePointsFlat.makeShared(),
+                      laserCloud.makeShared(),
+                      transformSum, millsec);
+    transformSum = laserMapping.transformSum();
 }
 
 void DsvlProcessor::printLog() {
