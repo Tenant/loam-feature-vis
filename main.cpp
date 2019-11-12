@@ -15,7 +15,7 @@ std::string label_path;
 std::string poseFileName;
 std::string outputDir;
 std::string tag_path;
-ofstream fout;
+//ofstream fout;
 
 
 int HEIGHT;
@@ -24,19 +24,6 @@ int VIS_HEIGHT;
 int VIS_WIDTH;
 double FAC_HEIGHT;
 
-point3d calib_shv, calib_ang;
-bool flagBbox;
-
-void loadCalibFile(std::string calibFileName)
-{
-    FILE* fCalib = std::fopen(calibFileName.c_str(), "r");
-    fscanf(fCalib, "rot %lf %lf %lf\n", &calib_ang.y, &calib_ang.x, &calib_ang.z);
-    fscanf(fCalib, "shv %lf %lf %lf\n", &calib_shv.x, &calib_shv.y, &calib_shv.z);
-    calib_ang.x *= M_PI/180.0;
-    calib_ang.y *= M_PI/180.0;
-    calib_ang.z *= M_PI/180.0;
-    std::fclose(fCalib);
-}
 
 int main(int argc, char* argv[])
 {
@@ -61,12 +48,10 @@ int main(int argc, char* argv[])
     VIS_WIDTH  = 1080;
     FAC_HEIGHT = (double)VIS_HEIGHT / (double)HEIGHT;
 
-    loadCalibFile(calibFileName);
-
-    DsvlProcessor dsvl(dsvlfilename);
+    DsvlProcessor dsvl(dsvlfilename, calibFileName);
     dsvl.Processing();
 
     cout << "Over!" << endl;
-    fout.close();
+//    fout.close();
     return 0;
 }

@@ -27,11 +27,14 @@ typedef pcl::PointXYZ pointT;
 class DsvlProcessor
 {
 public:
-    DsvlProcessor(std::string filename);
+    DsvlProcessor(std::string dsvl_, std::string calib_);
     bool ReadOneDsvlFrame ();
     void Processing();
     void ProcessOneFrame ();
     void printLog();
+    void loadCalibFile(std::string);
+    void transformToIMU(const pcl::PointXYZI& pi, pcl::PointXYZI& po);
+    void transformPclToIMU();
 
 private:
     pcl::visualization::PCLVisualizer::Ptr viewer;
@@ -53,6 +56,14 @@ private:
     ONEDSVFRAME	*onefrm;
     std::ifstream dfp;
     bool isRunning;
+
+    point3d	_ang;
+    point3d	_shv;
+    point3d _shv0;
+    point3d calib_ang;
+    point3d calib_shv;
+    cv::Matx33d _cTransMat;
+    cv::Matx33d _rTransMat;
 
     loam::MultiScanRegistration featureExtractor;
     loam::LaserOdometry laserOdometry;
