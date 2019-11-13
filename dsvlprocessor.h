@@ -12,6 +12,7 @@
 #include <cmath>
 #include <vector>
 
+#include <pcl/io/pcd_io.h>
 #include <pcl/point_types.h>
 #include <pcl/visualization/pcl_visualizer.h>
 
@@ -29,15 +30,23 @@ class DsvlProcessor
 public:
     DsvlProcessor(std::string dsvl_, std::string calib_);
     ~DsvlProcessor();
-    bool ReadOneDsvlFrame ();
     void Processing();
-    void ProcessOneFrame ();
-    void printLog();
-    void loadCalibFile(std::string);
-    void transformToIMU(const pcl::PointXYZI& pi, pcl::PointXYZI& po);
-    void transformPclToIMU();
 
 private:
+    bool ReadOneDsvlFrame ();
+    void ProcessOneFrame ();
+    void printLog();
+    void transformToIMU(const pcl::PointXYZI& pi, pcl::PointXYZI& po);
+    void transformToInit(const pcl::PointXYZI& pi, pcl::PointXYZI& po);
+    void loadCalibFile(std::string);
+    void updateTransformToInit();
+    void transformPclToIMU();
+    void transformImuToInit();
+    bool transformToCanvas(const float x_, const float y_, int& ix_, int& iy_);
+
+private:
+    cv::Mat _canvas;
+
     pcl::visualization::PCLVisualizer::Ptr viewer;
     pcl::PointCloud<pointT>::Ptr pts;
     pcl::visualization::PointCloudColorHandlerGenericField<pointT>::Ptr handler;
@@ -48,7 +57,10 @@ private:
     pcl::PointCloud<pcl::PointXYZI> surfacePointsFlat;
     pcl::PointCloud<pcl::PointXYZI> surfacePointsLessFlat;
 
-    loam::Twist transformSum;
+    pcl::PointCloud<pcl::PointXYZI> _map;
+
+    loam::Twist _transformSum;
+    loam::Twist _transformAftMapped;
 
     int dsvlbytesiz;
     int dsvbytesiz;
@@ -57,11 +69,16 @@ private:
     ONEDSVFRAME	*onefrm;
     std::ifstream dfp;
     bool isRunning;
+    bool  isInited;
     FILE *fout;
+    int num;
 
     point3d	_ang;
     point3d	_shv;
+    point3d _ang0;
     point3d _shv0;
+    point3d _initAng;
+    point3d _initShv;
     point3d calib_ang;
     point3d calib_shv;
     cv::Matx33d _cTransMat;

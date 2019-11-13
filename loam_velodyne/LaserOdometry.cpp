@@ -245,7 +245,7 @@ void LaserOdometry::spin(const pcl::PointCloud<pcl::PointXYZI>::Ptr& cornerPoint
         const pcl::PointCloud<pcl::PointXYZI>::Ptr& surfPointsFlat,
         const pcl::PointCloud<pcl::PointXYZI>::Ptr& surfPointsLessFlat,
         const pcl::PointCloud<pcl::PointXYZI>::Ptr& laserCloudFullRes,
-        Twist transform,
+        Twist imuTrans_,
         Time timestamp)
 {
   pcl::copyPointCloud(*cornerPointsSharp, *_cornerPointsSharp);
@@ -253,7 +253,15 @@ void LaserOdometry::spin(const pcl::PointCloud<pcl::PointXYZI>::Ptr& cornerPoint
   pcl::copyPointCloud(*surfPointsFlat, *_surfPointsFlat);
   pcl::copyPointCloud(*surfPointsLessFlat, *_surfPointsLessFlat);
   pcl::copyPointCloud(*laserCloudFullRes, *_laserCloudFullRes);
-  _transform = transform;
+
+  _imuPitchStart = imuTrans_.rot_x.rad();
+  _imuYawStart   = imuTrans_.rot_y.rad();
+  _imuRollStart  = imuTrans_.rot_z.rad();
+  _imuPitchEnd   = _imuPitchStart;
+  _imuYawEnd     = _imuYawStart;
+  _imuRollEnd    = _imuRollStart;
+  _imuShiftFromStart = Vector3(0,0,0);
+  _imuVeloFromStart  = Vector3(0,0,0);
 
   _timeCornerPointsSharp = timestamp;
   _timeCornerPointsLessSharp = timestamp;

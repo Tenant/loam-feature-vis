@@ -3,6 +3,9 @@
 
 
 DsvlProcessor::DsvlProcessor(std::string dsvl_, std::string calib_):
+isInited(false),
+num(0),
+_canvas(600,600,CV_8UC3, cv::Scalar::all(1)),
 viewer(new pcl::visualization::PCLVisualizer("Feature-Vis")),
 pts(new pcl::PointCloud<pointT>()),
 laserCloud(),
@@ -10,6 +13,7 @@ cornerPointsSharp(),
 cornerPointsLessSharp(),
 surfacePointsFlat(),
 surfacePointsLessFlat(),
+_map(),
 handler(new pcl::visualization::PointCloudColorHandlerGenericField<pointT>(pts, "z"))
 {
     loam::MultiScanMapper scanMapper = loam::MultiScanMapper(-16,7,40);
@@ -69,17 +73,14 @@ void DsvlProcessor::Processing()
 
     onefrm= new ONEDSVFRAME[1];
 
-    int num = 0;
-    bool first_frame = true;
-
     while (ReadOneDsvlFrame () && isRunning)
     {
         if (num%100==0) {
             printf("%d (%d)\n",num,dFrmNum);
         }
-
-        if (num == 100) break;
         num++;
+        if (num < 300) continue;
+        if (num > 450) break;
 
         ProcessOneFrame();
 
@@ -90,17 +91,15 @@ void DsvlProcessor::Processing()
         viewer->setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 5, "cornerPointsSharp");
         viewer->setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 3, "cornerPointsLessSharp");
         viewer->setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 4, "surfacePointsFlat");
-        if(first_frame)
+        if(!isInited)
         {
-//            viewer->addPointCloud<pointT>(pts, *handler, "DYP");
             viewer->addPointCloud<pcl::PointXYZI>(laserCloud.makeShared(), colorLaserCloud, "laserCloud");
             viewer->addPointCloud<pcl::PointXYZI>(cornerPointsSharp.makeShared(), colorCornerPointsSharp, "cornerPointsSharp");
             viewer->addPointCloud<pcl::PointXYZI>(cornerPointsLessSharp.makeShared(), colorCornerPointsLessSharp, "cornerPointsLessSharp");
             viewer->addPointCloud<pcl::PointXYZI>(surfacePointsFlat.makeShared(), colorSurfacePointsFlat, "surfacePointsFlat");
-            first_frame = false;
+            isInited = true;
         }
         else {
-//            viewer->updatePointCloud<pointT>(pts, *handler, "DYP");
             viewer->updatePointCloud<pcl::PointXYZI>(laserCloud.makeShared(), colorLaserCloud, "laserCloud");
             viewer->updatePointCloud<pcl::PointXYZI>(cornerPointsSharp.makeShared(), colorCornerPointsSharp, "cornerPointsSharp");
             viewer->updatePointCloud<pcl::PointXYZI>(cornerPointsLessSharp.makeShared(), colorCornerPointsLessSharp, "cornerPointsLessSharp");
@@ -108,12 +107,25 @@ void DsvlProcessor::Processing()
         }
         viewer->spinOnce(100);
 
+//        int ix0, ix1, iy0, iy1;
+//        bool bound0 = transformToCanvas(_shv0.x, _shv0.z, ix0, iy0);
+//        bool bound1 = transformToCanvas(_shv.x, _shv.z, ix1, iy1);
+//        if (bound0 && bound1)
+//            cv::line(_canvas, cv::Point(ix0,iy0), cv::Point(ix1,iy1), cv::Scalar(0,0,255), 5, CV_AA);
+//        cv::imshow("Traj", _canvas);
+//        cv::waitKey(100);
+
         printLog();
     }
+
+//    pcl::PCDWriter pclWriter;
+//    pclWriter.write("map.pcd",_map);
 }
 
 void DsvlProcessor::ProcessOneFrame() {
     loam::Time millsec = onefrm->dsv[0].millisec;
+    _ang = onefrm->dsv[0].ang;
+    _shv = onefrm->dsv[0].shv;
 
     point3fi *p;
     pts->clear();
@@ -130,8 +142,9 @@ void DsvlProcessor::ProcessOneFrame() {
         }
     }
 
-    featureExtractor.process(*pts, millsec);
+    updateTransformToInit();
 
+    featureExtractor.process(*pts, millsec);
     laserCloud = featureExtractor.laserCloud();
     cornerPointsSharp = featureExtractor.cornerPointsSharp();
     cornerPointsLessSharp = featureExtractor.cornerPointsLessSharp();
@@ -140,49 +153,109 @@ void DsvlProcessor::ProcessOneFrame() {
 
     transformPclToIMU();
 
-    loam::Twist transform;
-    transform.setZero();
+    if(!isInited) {
+        _ang0.x = 0; _ang0.y = 0; _ang.z = 0;
+        _initAng = _ang0;
+        _shv0 = _shv;
+        _initShv = _shv;
+    }
+
+    loam::Twist imuTrans;
+    imuTrans.pos = loam::Vector3(_shv.y - _shv0.y, _shv.z - _shv0.z, _shv.x - _shv0.x);
+    imuTrans.rot_x = loam::Angle(_ang.y - _ang0.y);
+    imuTrans.rot_y = loam::Angle(_ang.z - _ang0.z);
+    imuTrans.rot_z = loam::Angle(_ang.x - _ang0.x);
 
     laserOdometry.spin(cornerPointsSharp.makeShared(),
                        cornerPointsLessSharp.makeShared(),
                        surfacePointsFlat.makeShared(),
                        surfacePointsLessFlat.makeShared(),
                        laserCloud.makeShared(),
-                       transform, millsec);
-    transformSum = laserOdometry.transformSum();
+                       imuTrans, millsec);
+    _transformSum = laserOdometry.transformSum();
 
     laserMapping.spin(cornerPointsSharp.makeShared(),
                       surfacePointsFlat.makeShared(),
                       laserCloud.makeShared(),
-                      transformSum, millsec);
-    transformSum = laserMapping.transformSum();
+                      _transformSum, millsec);
+    _transformAftMapped = laserMapping.transformAftMapped();
+
+    transformImuToInit();
+
+//    _map += laserCloud;
+
+    _ang0 = _ang;
+    _shv0 = _shv;
 }
 
 void DsvlProcessor::printLog() {
-    std::printf("[timestamp, %d], ", onefrm->dsv[0].millisec);
+    std::printf("[num, %d], [timestamp, %d], ", num, onefrm->dsv[0].millisec);
     std::printf("[laserCloud, %zu], [cornerPointsSharp, %zu], [cornerPointsLessSharp, %zu], [surfacePointsFlat, %zu], [surfacePointsLessFlat, %zu]\n",\
     laserCloud.size(), cornerPointsSharp.size(), cornerPointsLessSharp.size(),\
     surfacePointsFlat.size(), surfacePointsLessFlat.size());
     std::printf("[x, %f], [y, %f], [z, %f], [pitch, %f], [yaw, %f], [roll, %f]\n",
-            transformSum.pos.x(),
-            transformSum.pos.y(),
-            transformSum.pos.z(),
-            transformSum.rot_x.deg(),
-            transformSum.rot_y.deg(),
-            transformSum.rot_z.deg());
+            _transformSum.pos.x(),
+            _transformSum.pos.y(),
+            _transformSum.pos.z(),
+            _transformSum.rot_x.deg(),
+            _transformSum.rot_y.deg(),
+            _transformSum.rot_z.deg());
+    std::printf("[x, %f], [y, %f], [z, %f], [pitch, %f], [yaw, %f], [roll, %f]\n",
+                _transformAftMapped.pos.x(),
+                _transformAftMapped.pos.y(),
+                _transformAftMapped.pos.z(),
+                _transformAftMapped.rot_x.deg(),
+                _transformAftMapped.rot_y.deg(),
+                _transformAftMapped.rot_z.deg());
+    std::printf("[x, %f], [y, %f], [z, %f], [pitch, %f], [yaw, %f], [roll, %f]\n",
+                _shv.y - _initShv.y,
+                _shv.z - _initShv.z,
+                _shv.x - _initShv.x,
+                _ang.y * 180 / M_PI,
+                _ang.z * 180 / M_PI,
+                _ang.x * 180 / M_PI);
     fprintf(fout, "%f, %f, %f, %f, %f, %f\n",
-            transformSum.pos.x(),
-            transformSum.pos.y(),
-            transformSum.pos.z(),
-            transformSum.rot_x.deg(),
-            transformSum.rot_y.deg(),
-            transformSum.rot_z.deg());
+            _transformAftMapped.pos.x(),
+            _transformAftMapped.pos.y(),
+            _transformAftMapped.pos.z(),
+            _transformAftMapped.rot_x.deg(),
+            _transformAftMapped.rot_y.deg(),
+            _transformAftMapped.rot_z.deg());
+}
+
+void DsvlProcessor::updateTransformToInit() {
+    point3d shv_now = _shv;
+    point3d ang_now = _ang;
+    ang_now.x = _ang.y;
+    ang_now.y = _ang.x;
+    double shv_x = shv_now.x - _initShv.x;
+    double shv_y = shv_now.y - _initShv.y;
+    double shv_z = shv_now.z - _initShv.z;
+    cv::Mat rot_x = (cv::Mat_<double>(4,4)<<1,0,0,0,0,cos(ang_now.x),-sin(ang_now.x),0,0,sin(ang_now.x),cos(ang_now.x),0,0,0,0,1);
+    cv::Mat rot_y = (cv::Mat_<double>(4,4)<<cos(ang_now.y),0,sin(ang_now.y),0,0,1,0,0,-sin(ang_now.y),0,cos(ang_now.y),0,0,0,0,1);
+    cv::Mat rot_z = (cv::Mat_<double>(4,4)<<cos(ang_now.z),-sin(ang_now.z),0,0,sin(ang_now.z),cos(ang_now.z),0,0,0,0,1,0,0,0,0,1);
+    cv::Mat shv = (cv::Mat_<double>(4,4)<<0,0,0,shv_x,0,0,0,shv_y,0,0,0,shv_z,0,0,0,0);
+    cv::Mat rot = rot_z*rot_y*rot_x + shv;
+    for(int i=0;i<3;i++)
+    {
+        for(int j=0;j<4;j++) {
+            if (j < 3) {
+                _rTransMat(i, j) = rot.at<double>(i,j);
+            }
+        }
+    }
 }
 
 void DsvlProcessor::transformToIMU(const pcl::PointXYZI &pi, pcl::PointXYZI &po) {
     po = pi;
     cv::Point3d pt_ = _cTransMat * cv::Point3d(pi.z, pi.x, pi.y) + cv::Point3d(calib_shv.x, calib_shv.y, calib_shv.z);
     po.x = pt_.y; po.y = pt_.z; po.z = pt_.x;
+}
+
+void DsvlProcessor::transformToInit(const pcl::PointXYZI& pi, pcl::PointXYZI& po) {
+    po = pi;
+    cv::Point3d pt = _rTransMat * cv::Point3d(pi.z, pi.x, pi.y) + cv::Point3d(_shv.x, _shv.y, _shv.z);
+    po.x = pt.y; po.y = pt.z; po.z = pt.x;
 }
 
 void DsvlProcessor::loadCalibFile(string filename) {
@@ -236,8 +309,46 @@ void DsvlProcessor::transformPclToIMU() {
     }
 }
 
+void DsvlProcessor::transformImuToInit() {
+    size_t laserCloudNum = laserCloud.points.size();
+    for (int i = 0; i < laserCloudNum; i++) {
+        transformToInit(laserCloud.points[i], laserCloud.points[i]);
+    }
+
+    size_t cornerPointsSharpNum = cornerPointsSharp.points.size();
+    for (int i = 0; i < cornerPointsSharpNum; i++) {
+        transformToInit(cornerPointsSharp.points[i], cornerPointsSharp.points[i]);
+    }
+
+    size_t cornerPointsLessSharpNum = cornerPointsLessSharp.points.size();
+    for (int i = 0; i < cornerPointsLessSharpNum; i++) {
+        transformToInit(cornerPointsLessSharp.points[i], cornerPointsLessSharp.points[i]);
+    }
+
+    size_t surfacePointsFlatNum = surfacePointsFlat.points.size();
+    for (int i = 0; i < surfacePointsFlatNum; i++) {
+        transformToInit(surfacePointsFlat.points[i], surfacePointsFlat.points[i]);
+    }
+
+    size_t surfacePointsLessFlatNum = surfacePointsFlat.points.size();
+    for (int i = 0; i < surfacePointsLessFlatNum; i++) {
+        transformToInit(surfacePointsLessFlat.points[i], surfacePointsLessFlat.points[i]);
+    }
+}
+
 DsvlProcessor::~DsvlProcessor() {
     std::fclose(fout);
     dfp.close();
 }
 
+bool DsvlProcessor::transformToCanvas(const float x_, const float y_, int &ix_, int &iy_) {
+    float res = 0.5; // Unit: m
+    int cen_x = 300, cen_y = 300;
+    ix_ = int(x_ / res) + cen_x;
+    iy_ = int(y_ / res) + cen_y;
+
+    if (ix_ >= 0 && ix_ < 600 && iy_ >= 0 && iy_ < 600) {
+        return true;
+    }
+    return false;
+}
