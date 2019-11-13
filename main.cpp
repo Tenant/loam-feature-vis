@@ -15,7 +15,6 @@ std::string label_path;
 std::string poseFileName;
 std::string outputDir;
 std::string tag_path;
-//ofstream fout;
 
 
 int HEIGHT;

@@ -31,6 +31,8 @@ handler(new pcl::visualization::PointCloudColorHandlerGenericField<pointT>(pts, 
     dsvbytesiz = dsvlbytesiz-sizeof(int)*LINES_PER_BLK*PNTS_PER_LINE;
     dFrmNum=0;
 
+    fout = std::fopen("traj.nav", "w");
+
     dfp.open(dsvl_.c_str(), std::ios_base::binary);
     if (!dfp.is_open()){
         printf("File open failure : %s\n", dsvl_.c_str());
@@ -158,10 +160,17 @@ void DsvlProcessor::ProcessOneFrame() {
 
 void DsvlProcessor::printLog() {
     std::printf("[timestamp, %d], ", onefrm->dsv[0].millisec);
-    std::printf("[laserCloud, %d], [cornerPointsSharp, %d], [cornerPointsLessSharp, %d], [surfacePointsFlat, %d], [surfacePointsLessFlat, %d]\n",\
+    std::printf("[laserCloud, %zu], [cornerPointsSharp, %zu], [cornerPointsLessSharp, %zu], [surfacePointsFlat, %zu], [surfacePointsLessFlat, %zu]\n",\
     laserCloud.size(), cornerPointsSharp.size(), cornerPointsLessSharp.size(),\
     surfacePointsFlat.size(), surfacePointsLessFlat.size());
     std::printf("[x, %f], [y, %f], [z, %f], [pitch, %f], [yaw, %f], [roll, %f]\n",
+            transformSum.pos.x(),
+            transformSum.pos.y(),
+            transformSum.pos.z(),
+            transformSum.rot_x.deg(),
+            transformSum.rot_y.deg(),
+            transformSum.rot_z.deg());
+    fprintf(fout, "%f, %f, %f, %f, %f, %f\n",
             transformSum.pos.x(),
             transformSum.pos.y(),
             transformSum.pos.z(),
@@ -225,5 +234,10 @@ void DsvlProcessor::transformPclToIMU() {
     for (int i = 0; i < surfacePointsLessFlatNum; i++) {
         transformToIMU(surfacePointsLessFlat.points[i], surfacePointsLessFlat.points[i]);
     }
+}
+
+DsvlProcessor::~DsvlProcessor() {
+    std::fclose(fout);
+    dfp.close();
 }
 

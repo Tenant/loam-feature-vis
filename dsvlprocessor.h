@@ -28,6 +28,7 @@ class DsvlProcessor
 {
 public:
     DsvlProcessor(std::string dsvl_, std::string calib_);
+    ~DsvlProcessor();
     bool ReadOneDsvlFrame ();
     void Processing();
     void ProcessOneFrame ();
@@ -56,6 +57,7 @@ private:
     ONEDSVFRAME	*onefrm;
     std::ifstream dfp;
     bool isRunning;
+    FILE *fout;
 
     point3d	_ang;
     point3d	_shv;
