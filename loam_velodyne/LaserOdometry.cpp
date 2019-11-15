@@ -83,7 +83,7 @@ LaserOdometry::LaserOdometry(const LaserOdometryParams& params)
 void LaserOdometry::transformToStart(const pcl::PointXYZI& pi, pcl::PointXYZI& po)
 {
   // first translate, then rotate based on registered scan time
-  float s = 10 * (pi.intensity - int(pi.intensity));
+  float s = 1; // 10 * (pi.intensity - int(pi.intensity));
 
   po.x = pi.x - s * _transform.pos.x();
   po.y = pi.y - s * _transform.pos.y();
@@ -254,13 +254,13 @@ void LaserOdometry::spin(const pcl::PointCloud<pcl::PointXYZI>::Ptr& cornerPoint
   pcl::copyPointCloud(*surfPointsLessFlat, *_surfPointsLessFlat);
   pcl::copyPointCloud(*laserCloudFullRes, *_laserCloudFullRes);
 
-  _imuPitchStart = imuTrans_.rot_x.rad();
-  _imuYawStart   = imuTrans_.rot_y.rad();
-  _imuRollStart  = imuTrans_.rot_z.rad();
-  _imuPitchEnd   = _imuPitchStart;
-  _imuYawEnd     = _imuYawStart;
-  _imuRollEnd    = _imuRollStart;
-  _imuShiftFromStart = Vector3(0,0,0);
+  _imuPitchStart = Angle();
+  _imuYawStart   = Angle();
+  _imuRollStart  = Angle();
+  _imuPitchEnd   = imuTrans_.rot_x.rad();
+  _imuYawEnd     = imuTrans_.rot_y.rad();
+  _imuRollEnd    = imuTrans_.rot_z.rad();
+  _imuShiftFromStart = imuTrans_.pos;
   _imuVeloFromStart  = Vector3(0,0,0);
 
   _timeCornerPointsSharp = timestamp;
@@ -366,7 +366,7 @@ bool LaserOdometry::process()
       _coeffSel->clear();
 
       for (size_t i = 0; i < cornerPointsSharpNum; i++) {
-//        transformToStart(_cornerPointsSharp->points[i], pointSel); //
+        transformToStart(_cornerPointsSharp->points[i], pointSel);
 
         if (iterCount % 5 == 0) {
           pcl::removeNaNFromPointCloud(*_lastCornerCloud, *_lastCornerCloud, indices);
@@ -470,7 +470,7 @@ bool LaserOdometry::process()
       }
 
       for (size_t i = 0; i < surfPointsFlatNum; i++) {
-//        transformToStart(_surfPointsFlat->points[i], pointSel);
+        transformToStart(_surfPointsFlat->points[i], pointSel);
 
         if (iterCount % 5 == 0) {
           _lastSurfaceKDTree->nearestKSearch(pointSel, 1, pointSearchInd, pointSearchSqDis);
@@ -809,8 +809,8 @@ bool LaserOdometry::process()
   lastSurfaceCloudSize = _lastSurfaceCloud->points.size();
 
   if (lastCornerCloudSize > 10 && lastSurfaceCloudSize > 100) {
-//    _lastCornerKDTree.setInputCloud(_lastCornerCloud);
-//    _lastSurfaceKDTree.setInputCloud(_lastSurfaceCloud);
+    _lastCornerKDTree->setInputCloud(_lastCornerCloud);
+    _lastSurfaceKDTree->setInputCloud(_lastSurfaceCloud);
   }
 
   return true;
