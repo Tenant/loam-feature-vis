@@ -73,7 +73,9 @@ LaserMapping::LaserMapping(const LaserMappingParams& params)
         _laserCloudSurround(new pcl::PointCloud<pcl::PointXYZI>()),
         _laserCloudSurroundDS(new pcl::PointCloud<pcl::PointXYZI>()),
         _laserCloudCornerFromMap(new pcl::PointCloud<pcl::PointXYZI>()),
-        _laserCloudSurfFromMap(new pcl::PointCloud<pcl::PointXYZI>())
+        _laserCloudSurfFromMap(new pcl::PointCloud<pcl::PointXYZI>()),
+        _laserCloudOri(),
+        _coeffSel()
 {
   // initialize frame counter
   _frameCount = _params.stackFrameNum - 1;
@@ -617,13 +619,11 @@ void LaserMapping::optimizeTransformTobeMapped()
   size_t laserCloudCornerStackNum = _laserCloudCornerStackDS->points.size();
   size_t laserCloudSurfStackNum = _laserCloudSurfStackDS->points.size();
 
-  pcl::PointCloud<pcl::PointXYZI> laserCloudOri;
-  pcl::PointCloud<pcl::PointXYZI> coeffSel;
 
   // start iterating
   for (size_t iterCount = 0; iterCount < _params.maxIterations; iterCount++) {
-    laserCloudOri.clear();
-    coeffSel.clear();
+    _laserCloudOri.clear();
+    _coeffSel.clear();
 
     // process edges
     for (size_t i = 0; i < laserCloudCornerStackNum; i++) {
@@ -704,8 +704,8 @@ void LaserMapping::optimizeTransformTobeMapped()
           coeff.intensity = s * ld2;
 
           if (s > 0.1) {
-            laserCloudOri.push_back(pointOri);
-            coeffSel.push_back(coeff);
+            _laserCloudOri.push_back(pointOri);
+            _coeffSel.push_back(coeff);
           }
         }
       }
@@ -763,8 +763,8 @@ void LaserMapping::optimizeTransformTobeMapped()
           coeff.intensity = s * pd2;
 
           if (s > 0.1) {
-            laserCloudOri.push_back(pointOri);
-            coeffSel.push_back(coeff);
+            _laserCloudOri.push_back(pointOri);
+            _coeffSel.push_back(coeff);
           }
         }
       }
@@ -779,7 +779,7 @@ void LaserMapping::optimizeTransformTobeMapped()
     float srz = _transformTobeMapped.rot_z.sin();
     float crz = _transformTobeMapped.rot_z.cos();
 
-    size_t laserCloudSelNum = laserCloudOri.points.size();
+    size_t laserCloudSelNum = _laserCloudOri.points.size();
     if (laserCloudSelNum < 50) {
       continue;
     }
@@ -792,8 +792,8 @@ void LaserMapping::optimizeTransformTobeMapped()
     Eigen::VectorXf matX;
 
     for (size_t i = 0; i < laserCloudSelNum; i++) {
-      pointOri = laserCloudOri.points[i];
-      coeff = coeffSel.points[i];
+      pointOri = _laserCloudOri.points[i];
+      coeff = _coeffSel.points[i];
 
       float arx = (crx*sry*srz*pointOri.x + crx*crz*sry*pointOri.y - srx*sry*pointOri.z) * coeff.x
                   + (-srx*srz*pointOri.x - crz*srx*pointOri.y - crx*pointOri.z) * coeff.y

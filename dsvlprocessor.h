@@ -36,6 +36,7 @@ private:
     bool ReadOneDsvlFrame ();
     void ProcessOneFrame ();
     void printLog();
+    void savePointCloud();
     void transformToIMU(const pcl::PointXYZI& pi, pcl::PointXYZI& po);
     void transformToInit(const pcl::PointXYZI& pi, pcl::PointXYZI& po);
     void loadCalibFile(std::string);
@@ -56,8 +57,10 @@ private:
     pcl::PointCloud<pcl::PointXYZI> cornerPointsLessSharp;
     pcl::PointCloud<pcl::PointXYZI> surfacePointsFlat;
     pcl::PointCloud<pcl::PointXYZI> surfacePointsLessFlat;
+    pcl::PointCloud<pcl::PointXYZI> laserCloudOri;
+    pcl::PointCloud<pcl::PointXYZI> coeffSel;
 
-    pcl::PointCloud<pcl::PointXYZI> _map;
+    pcl::PointCloud<pcl::PointXYZI>::Ptr _map;
 
     loam::Twist _transformSum;
     loam::Twist _transformAftMapped;

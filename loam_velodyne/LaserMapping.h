@@ -137,6 +137,14 @@ public:
     return _newLaserOdometry;
   }
 
+  pcl::PointCloud<pcl::PointXYZI> laserCloudOri() {
+    return _laserCloudOri;
+  }
+
+  pcl::PointCloud<pcl::PointXYZI> coeffSel() {
+    return _coeffSel;
+  }
+
 
 protected:
   /** \brief Reset flags, etc. */
@@ -213,6 +221,9 @@ private:
   pcl::VoxelGrid<pcl::PointXYZI> _downSizeFilterCorner;   ///< voxel filter for down sizing corner clouds
   pcl::VoxelGrid<pcl::PointXYZI> _downSizeFilterSurf;     ///< voxel filter for down sizing surface clouds
   pcl::VoxelGrid<pcl::PointXYZI> _downSizeFilterMap;      ///< voxel filter for down sizing accumulated map
+
+  pcl::PointCloud<pcl::PointXYZI> _laserCloudOri;
+  pcl::PointCloud<pcl::PointXYZI> _coeffSel;
 };
 
 } // end namespace loam

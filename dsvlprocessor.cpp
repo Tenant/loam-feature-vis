@@ -13,7 +13,7 @@ cornerPointsSharp(),
 cornerPointsLessSharp(),
 surfacePointsFlat(),
 surfacePointsLessFlat(),
-_map(),
+_map(new pcl::PointCloud<pcl::PointXYZI>()),
 handler(new pcl::visualization::PointCloudColorHandlerGenericField<pointT>(pts, "z"))
 {
     loam::MultiScanMapper scanMapper = loam::MultiScanMapper(-16,7,40);
@@ -116,10 +116,15 @@ void DsvlProcessor::Processing()
 //        cv::waitKey(100);
 
         printLog();
+//        savePointCloud();
     }
 
-//    pcl::PCDWriter pclWriter;
-//    pclWriter.write("map.pcd",_map);
+    pcl::PCDWriter pclWriter;
+//    pcl::VoxelGrid<pcl::PointXYZI> mapFilter;
+//    mapFilter.setLeafSize(0.1,0.1,0.1);
+//    mapFilter.setInputCloud(_map.makeShared());
+//    mapFilter.filter(_map);
+    pclWriter.write("map-slam-fined-1.pcd",*_map);
 }
 
 void DsvlProcessor::ProcessOneFrame() {
@@ -179,6 +184,9 @@ void DsvlProcessor::ProcessOneFrame() {
                       laserCloud.makeShared(),
                       _transformSum, millsec);
     _transformAftMapped = laserMapping.transformAftMapped();
+    laserCloudOri = laserMapping.laserCloudOri();
+    coeffSel = laserMapping.coeffSel();
+    laserMapping.generateMapCloud(_map);
 
     transformImuToInit();
 
@@ -334,6 +342,11 @@ void DsvlProcessor::transformImuToInit() {
     for (int i = 0; i < surfacePointsLessFlatNum; i++) {
         transformToInit(surfacePointsLessFlat.points[i], surfacePointsLessFlat.points[i]);
     }
+
+    size_t laserCloudOriNum = laserCloudOri.points.size();
+    for (int i = 0; i < laserCloudOriNum; i++) {
+        transformToInit(laserCloudOri.points[i], laserCloudOri.points[i]);
+    }
 }
 
 DsvlProcessor::~DsvlProcessor() {
@@ -351,4 +364,17 @@ bool DsvlProcessor::transformToCanvas(const float x_, const float y_, int &ix_, 
         return true;
     }
     return false;
+}
+
+void DsvlProcessor::savePointCloud() {
+    if (!laserCloud.empty() && !laserCloudOri.empty() && !coeffSel.empty()) {
+        char name[20];
+        pcl::PCDWriter writer;
+        sprintf(name, "export/pcl-%d.pcd", num);
+        writer.write(name,laserCloud);
+        sprintf(name, "export/ori-%d.pcd", num);
+        writer.write(name, laserCloudOri);
+        sprintf(name, "export/eff-%d.pcd", num);
+        writer.write(name, coeffSel);
+    }
 }
